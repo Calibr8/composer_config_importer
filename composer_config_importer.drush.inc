@@ -33,6 +33,10 @@ function composer_config_importer_drush_command() {
         'description' => 'The subdirectory the yml files are in.',
         'example-value' => 'config',
       ],
+      'type' => [
+        'description' => 'The type of config: feature or config.',
+        'default-value' => 'config',
+      ],
     ],
   ];
   return $items;
@@ -43,20 +47,50 @@ function composer_config_importer_drush_command() {
  */
 function drush_composer_config_importer($package = NULL) {
 
-  drush_print(dt('Starting Import.'));
-
   // Determine source directory.
   if ($package) {
-    $location = drush_get_option('location', '../config-import');
+
+    $type = drush_get_option('type', 'config');
+    $subdir = drush_get_option('subdir', 'config/install');
+    if ($type == 'feature') {
+      $location = drush_get_option('location', 'modules/features');
+    }
+    else {
+      $location = drush_get_option('location', '../config-import');
+    }
+
     if (substr($location, -1) != "/") $location .= "/";
-    $subdir = drush_get_option('subdir', 'config');
     if (substr($subdir, 0, 1) != "/") $subdir = "/" . $subdir;
     $source_dir = $location . $package . $subdir;
+    $package_dir = $location . $package;
+
   }
   else {
-    // @todo get source from config
     return drush_log(dt('You must provide a package'), LogLevel::ERROR);
   }
+
+  // enable dependencies
+
+  $infoyaml = $package_dir . '/' . $package . '.info.yml';
+  $file_contents = file_get_contents($infoyaml);
+  $ymldata = Yaml::decode($file_contents);
+  $extensions = $ymldata['dependencies'];
+  $extension_info = drush_get_extensions(FALSE);
+  $modules = array();
+  foreach ($extensions as $name) {
+    if (!$extension_info[$name]->status) {
+      $modules[] = $name;
+    }
+  }
+  drush_print(dt('The following extensions will be enabled: !extensions', array('!extensions' => implode(', ', $modules))));
+  if(!drush_confirm(dt('Do you really want to continue?'))) {
+    return drush_user_abort();
+  }
+
+  \Drupal::service('module_installer')->install($modules);
+
+
+  // import config
 
   /** @var \Drupal\Core\Config\StorageInterface $active_storage */
   $active_storage = \Drupal::service('config.storage');
