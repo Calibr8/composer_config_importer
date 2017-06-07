@@ -1,0 +1,15 @@
+{
+    "name": "calibrate/composer_config_importer",
+    "description": "Import configuration required by composer",
+    "type": "drupal-drush",
+    "homepage": "https://github.com/calibr8/composer_config_importer",
+    "license": "GPL-2.0+",
+    "authors": [
+        {
+            "name": "Steven Van den Hout",
+            "email": "steven.vandenhout@calibrate.be",
+            "homepage": "http://www.calibrate.be",
+            "role": "Drupal Lead"
+        }
+    ]
+}
